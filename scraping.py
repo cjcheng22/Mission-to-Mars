@@ -1,165 +1,115 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 1,
-   "id": "e2e48c3e",
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "\n",
-      "\n",
-      "====== WebDriver manager ======\n",
-      "Current google-chrome version is 102.0.5005\n",
-      "Get LATEST chromedriver version for 102.0.5005 google-chrome\n",
-      "Trying to download new driver from https://chromedriver.storage.googleapis.com/102.0.5005.61/chromedriver_win32.zip\n",
-      "Driver has been saved in cache [C:\\Users\\cjche\\.wdm\\drivers\\chromedriver\\win32\\102.0.5005.61]\n"
-     ]
-    },
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "{'news_title': \"NASA Wins 4 Webbys, 4 People's Voice Awards\", 'news_paragraph': 'Winners include the JPL-managed \"Send Your Name to Mars\" campaign, NASA\\'s Global Climate Change website and Solar System Interactive.', 'featured_image': 'https://spaceimages-mars.com/image/featured/mars1.jpg', 'facts': '<table border=\"1\" class=\"dataframe\">\\n  <thead>\\n    <tr style=\"text-align: right;\">\\n      <th></th>\\n      <th>Mars</th>\\n      <th>Earth</th>\\n    </tr>\\n    <tr>\\n      <th>Description</th>\\n      <th></th>\\n      <th></th>\\n    </tr>\\n  </thead>\\n  <tbody>\\n    <tr>\\n      <th>Mars - Earth Comparison</th>\\n      <td>Mars</td>\\n      <td>Earth</td>\\n    </tr>\\n    <tr>\\n      <th>Diameter:</th>\\n      <td>6,779 km</td>\\n      <td>12,742 km</td>\\n    </tr>\\n    <tr>\\n      <th>Mass:</th>\\n      <td>6.39 × 10^23 kg</td>\\n      <td>5.97 × 10^24 kg</td>\\n    </tr>\\n    <tr>\\n      <th>Moons:</th>\\n      <td>2</td>\\n      <td>1</td>\\n    </tr>\\n    <tr>\\n      <th>Distance from Sun:</th>\\n      <td>227,943,824 km</td>\\n      <td>149,598,262 km</td>\\n    </tr>\\n    <tr>\\n      <th>Length of Year:</th>\\n      <td>687 Earth days</td>\\n      <td>365.24 days</td>\\n    </tr>\\n    <tr>\\n      <th>Temperature:</th>\\n      <td>-87 to -5 °C</td>\\n      <td>-88 to 58°C</td>\\n    </tr>\\n  </tbody>\\n</table>', 'last_modified': datetime.datetime(2022, 6, 11, 14, 40, 45, 186705)}\n"
-     ]
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
+# Import Splinter and BeautifulSoup
+from splinter import Browser
+from bs4 import BeautifulSoup as soup
+import pandas as pd
+import datetime as dt
+from webdriver_manager.chrome import ChromeDriverManager
+
+def scrape_all():
+    # Initiate headless driver for deployment
+    executable_path = {'executable_path': ChromeDriverManager().install()}
+    browser = Browser('chrome', **executable_path, headless=True)
+    
+    news_title, news_paragraph = mars_news(browser)
+    
+    # Run all scraping functions and store results in dictionary
+    data = {
+        "news_title": news_title,
+        "news_paragraph": news_paragraph,
+        "featured_image": featured_image(browser),
+        "facts": mars_facts(),
+        "last_modified": dt.datetime.now()
     }
-   ],
-   "source": [
-    "# Import Splinter and BeautifulSoup\n",
-    "from splinter import Browser\n",
-    "from bs4 import BeautifulSoup as soup\n",
-    "import pandas as pd\n",
-    "import datetime as dt\n",
-    "from webdriver_manager.chrome import ChromeDriverManager\n",
-    "\n",
-    "def scrape_all():\n",
-    "    # Initiate headless driver for deployment\n",
-    "    executable_path = {'executable_path': ChromeDriverManager().install()}\n",
-    "    browser = Browser('chrome', **executable_path, headless=True)\n",
-    "    \n",
-    "    news_title, news_paragraph = mars_news(browser)\n",
-    "    \n",
-    "    # Run all scraping functions and store results in dictionary\n",
-    "    data = {\n",
-    "        \"news_title\": news_title,\n",
-    "        \"news_paragraph\": news_paragraph,\n",
-    "        \"featured_image\": featured_image(browser),\n",
-    "        \"facts\": mars_facts(),\n",
-    "        \"last_modified\": dt.datetime.now()\n",
-    "    }\n",
-    "    \n",
-    "    # Stop webdriver and return data\n",
-    "    browser.quit()\n",
-    "    return data\n",
-    "\n",
-    "def mars_news(browser):\n",
-    "\n",
-    "    # Visit the mars nasa news site\n",
-    "    url = 'https://redplanetscience.com'\n",
-    "    browser.visit(url)\n",
-    "\n",
-    "    # Optional delay for loading the page\n",
-    "    browser.is_element_present_by_css('div.list_text', wait_time=1)\n",
-    "\n",
-    "    # Convert the browser html to a soup object and then quit the browser\n",
-    "    html = browser.html\n",
-    "    news_soup = soup(html, 'html.parser')\n",
-    "    \n",
-    "    # Add try/except for error handling\n",
-    "    try:\n",
-    "        slide_elem = news_soup.select_one('div.list_text')\n",
-    "        # Use the parent element to find the first 'a' tag and save it as 'news_title'\n",
-    "        news_title = slide_elem.find('div', class_='content_title').get_text()\n",
-    "        # Use the parent element to find the paragraph text\n",
-    "        news_p = slide_elem.find('div', class_='article_teaser_body').get_text()\n",
-    "    \n",
-    "    except AttributeError:\n",
-    "        return None, None\n",
-    "    \n",
-    "    \n",
-    "    return news_title, news_p    \n",
-    "    \n",
-    "# ### Featured Images\n",
-    "\n",
-    "def featured_image(browser):\n",
-    "\n",
-    "    # Visit URL\n",
-    "    url = 'https://spaceimages-mars.com'\n",
-    "    browser.visit(url)\n",
-    "\n",
-    "    # Find and click the full image button\n",
-    "    full_image_elem = browser.find_by_tag('button')[1]\n",
-    "    full_image_elem.click()\n",
-    "\n",
-    "    # Parse the resulting html with soup\n",
-    "    html = browser.html\n",
-    "    img_soup = soup(html, 'html.parser')\n",
-    "\n",
-    "    # Add try/except for error handling\n",
-    "    try:\n",
-    "        # Find the relative image url\n",
-    "        img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')\n",
-    "\n",
-    "    except AttributeError:\n",
-    "        return None\n",
-    "\n",
-    "    # Use the base url to create an absolute url\n",
-    "    img_url = f'https://spaceimages-mars.com/{img_url_rel}'\n",
-    "\n",
-    "    return img_url\n",
-    "    \n",
-    "def mars_facts():\n",
-    "    # Add try/except for error handling\n",
-    "    try:\n",
-    "        # Use 'read_html' to scrape the facts table into a dataframe\n",
-    "        df = pd.read_html('https://galaxyfacts-mars.com')[0]\n",
-    "\n",
-    "    except BaseException:\n",
-    "        return None\n",
-    "\n",
-    "    # Assign columns and set index of dataframe\n",
-    "    df.columns=['Description', 'Mars', 'Earth']\n",
-    "    df.set_index('Description', inplace=True)\n",
-    "\n",
-    "    # Convert dataframe into HTML format, add bootstrap\n",
-    "    return df.to_html()\n",
-    "\n",
-    "if __name__ == \"__main__\":\n",
-    "    # If running as script, print scraped data\n",
-    "    print(scrape_all())"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "68708e9d",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.9.7"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+    
+    # Stop webdriver and return data
+    browser.quit()
+    return data
+
+def mars_news(browser):
+
+    # Visit the mars nasa news site
+    url = 'https://redplanetscience.com'
+    browser.visit(url)
+
+    # Optional delay for loading the page
+    browser.is_element_present_by_css('div.list_text', wait_time=1)
+
+    # Convert the browser html to a soup object and then quit the browser
+    html = browser.html
+    news_soup = soup(html, 'html.parser')
+    
+    # Add try/except for error handling
+    try:
+        slide_elem = news_soup.select_one('div.list_text')
+        # Use the parent element to find the first 'a' tag and save it as 'news_title'
+        news_title = slide_elem.find('div', class_='content_title').get_text()
+        # Use the parent element to find the paragraph text
+        news_p = slide_elem.find('div', class_='article_teaser_body').get_text()
+    
+    except AttributeError:
+        return None, None
+    
+    
+    return news_title, news_p    
+    
+# ### Featured Images
+
+def featured_image(browser):
+
+    # Visit URL
+    url = 'https://spaceimages-mars.com'
+    browser.visit(url)
+
+    # Find and click the full image button
+    full_image_elem = browser.find_by_tag('button')[1]
+    full_image_elem.click()
+
+    # Parse the resulting html with soup
+    html = browser.html
+    img_soup = soup(html, 'html.parser')
+
+    # Add try/except for error handling
+    try:
+        # Find the relative image url
+        img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')
+
+    except AttributeError:
+        return None
+
+    # Use the base url to create an absolute url
+    img_url = f'https://spaceimages-mars.com/{img_url_rel}'
+
+    return img_url
+    
+def mars_facts():
+    # Add try/except for error handling
+    try:
+        # Use 'read_html' to scrape the facts table into a dataframe
+        df = pd.read_html('https://galaxyfacts-mars.com')[0]
+
+    except BaseException:
+        return None
+
+    # Assign columns and set index of dataframe
+    df.columns=['Description', 'Mars', 'Earth']
+    df.set_index('Description', inplace=True)
+
+    # Convert dataframe into HTML format, add bootstrap
+    return df.to_html()
+
+if __name__ == "__main__":
+    # If running as script, print scraped data
+    print(scrape_all())
+
+
+# In[ ]:
+
+
+
+
